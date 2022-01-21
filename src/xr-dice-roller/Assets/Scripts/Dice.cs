@@ -6,9 +6,11 @@ public class Dice : MonoBehaviour
 {
     public int CurrentValue;
     public float DotValue;
-    public int HighestValue;
-    public float HighestHeight;
-    public Transform[] faces;
+
+    public Vector3[] faceDirections;
+
+    private Matrix4x4 trsMatrix;
+
     private void Update()
     {
         CurrentValue = GetCurrentValue()+1;
@@ -16,44 +18,41 @@ public class Dice : MonoBehaviour
 
     private int GetCurrentValue()
     {
-        int highestIndex = -1;
-        float highestHeight = float.MinValue;
         int value = 0;
         float closest = -1f;
-        for(int i = 0; i < faces.Length; i++)
+        float dot;
+        Vector3 worldPosition;
+        Vector3 direction;
+
+        trsMatrix  = Matrix4x4.TRS(this.transform.position, this.transform.rotation, this.transform.localScale);
+        for (int i = 0; i < faceDirections.Length; i++)
         {
-            Vector3 direction = (faces[i].position-this.transform.position).normalized;
-            float dot = Vector3.Dot(Vector3.up, direction);
-            if(dot > closest)
+            worldPosition = trsMatrix.MultiplyPoint3x4(faceDirections[i]);
+            direction = worldPosition.normalized;
+            dot = Vector3.Dot(Vector3.up, direction);
+
+            if (dot > closest)
             {
                 value = i;
                 closest = dot;
             }
-
-            // by height
-            if(faces[i].position.y > highestHeight)
-            {
-                highestHeight = faces[i].position.y;
-                highestIndex = i;
-            }
         }
 
-        HighestValue = highestIndex;
-        HighestHeight = highestHeight;
-
         DotValue = closest;
+
         return value;
     }
 
-    void OnDrawGizmosSelected()
+    void OnDrawGizmos()
     {
-        for(int i = 0; i < faces.Length; i++)
+        Gizmos.color = Color.green;
+        for (int i = 0; i < faceDirections.Length; i++)
         {
-            // Display the explosion radius when selected
-            Gizmos.color = new Color(1, 1, 0, 0.75F);
-            Vector3 worldPos = faces[i].position;
-            Gizmos.DrawSphere(worldPos, 0.1f);
-            drawString($"{i+1}",worldPos, Color.red);
+            Matrix4x4 m = Matrix4x4.TRS(this.transform.position, this.transform.rotation, this.transform.localScale);
+            Vector3 worldPos = m.MultiplyPoint3x4(faceDirections[i]);
+            
+            Gizmos.DrawSphere(this.transform.position + worldPos.normalized, 0.1f);
+            drawString($"{i + 1}", this.transform.position + worldPos.normalized, Color.red);
         }
     }
 
